@@ -1,0 +1,309 @@
+rcer.style.height = scrollerForcer.style.height;
+			}
+		}
+
+		oGrid.liner.appendChild( oClone.body );
+
+		this._fnEqualiseHeights( 'tbody', that.dom.body, oClone.body );
+
+		/*
+		 * Footer
+		 */
+		if ( dt.nTFoot !== null )
+		{
+			if ( bAll )
+			{
+				if ( oClone.footer !== null )
+				{
+					oClone.footer.parentNode.removeChild( oClone.footer );
+				}
+				oClone.footer = $(this.dom.footer).clone(true, true)[0];
+				oClone.footer.className += " DTFC_Cloned";
+				oClone.footer.style.width = "100%";
+				oGrid.foot.appendChild( oClone.footer );
+
+				/* Copy the footer just like we do for the header */
+				aoCloneLayout = this._fnCopyLayout( dt.aoFooter, aiColumns );
+				var jqCloneTfoot = $('>tfoot', oClone.footer);
+				jqCloneTfoot.empty();
+
+				for ( i=0, iLen=aoCloneLayout.length ; i<iLen ; i++ )
+				{
+					jqCloneTfoot[0].appendChild( aoCloneLayout[i].nTr );
+				}
+				dt.oApi._fnDrawHead( dt, aoCloneLayout, true );
+			}
+			else
+			{
+				aoCloneLayout = this._fnCopyLayout( dt.aoFooter, aiColumns );
+				var aoCurrFooter=[];
+
+				dt.oApi._fnDetectHeader( aoCurrFooter, $('>tfoot', oClone.footer)[0] );
+
+				for ( i=0, iLen=aoCloneLayout.length ; i<iLen ; i++ )
+				{
+					for ( j=0, jLen=aoCloneLayout[i].length ; j<jLen ; j++ )
+					{
+						aoCurrFooter[i][j].cell.className = aoCloneLayout[i][j].cell.className;
+					}
+				}
+			}
+			this._fnEqualiseHeights( 'tfoot', this.dom.footer, oClone.footer );
+		}
+
+		/* Equalise the column widths between the header footer and body - body get's priority */
+		var anUnique = dt.oApi._fnGetUniqueThs( dt, $('>thead', oClone.header)[0] );
+		$(anUnique).each( function (i) {
+			iColumn = aiColumns[i];
+			this.style.width = that.s.aiInnerWidths[iColumn]+"px";
+		} );
+
+		if ( that.s.dt.nTFoot !== null )
+		{
+			anUnique = dt.oApi._fnGetUniqueThs( dt, $('>tfoot', oClone.footer)[0] );
+			$(anUnique).each( function (i) {
+				iColumn = aiColumns[i];
+				this.style.width = that.s.aiInnerWidths[iColumn]+"px";
+			} );
+		}
+	},
+
+
+	/**
+	 * From a given table node (THEAD etc), get a list of TR direct child elements
+	 *  @param   {Node} nIn Table element to search for TR elements (THEAD, TBODY or TFOOT element)
+	 *  @returns {Array} List of TR elements found
+	 *  @private
+	 */
+	"_fnGetTrNodes": function ( nIn )
+	{
+		var aOut = [];
+		for ( var i=0, iLen=nIn.childNodes.length ; i<iLen ; i++ )
+		{
+			if ( nIn.childNodes[i].nodeName.toUpperCase() == "TR" )
+			{
+				aOut.push( nIn.childNodes[i] );
+			}
+		}
+		return aOut;
+	},
+
+
+	/**
+	 * Equalise the heights of the rows in a given table node in a cross browser way
+	 *  @returns {void}
+	 *  @param   {String} nodeName Node type - thead, tbody or tfoot
+	 *  @param   {Node} original Original node to take the heights from
+	 *  @param   {Node} clone Copy the heights to
+	 *  @private
+	 */
+	"_fnEqualiseHeights": function ( nodeName, original, clone )
+	{
+		if ( this.s.sHeightMatch == 'none' && nodeName !== 'thead' && nodeName !== 'tfoot' )
+		{
+			return;
+		}
+
+		var that = this,
+			i, iLen, iHeight, iHeight2, iHeightOriginal, iHeightClone,
+			rootOriginal = original.getElementsByTagName(nodeName)[0],
+			rootClone    = clone.getElementsByTagName(nodeName)[0],
+			jqBoxHack    = $('>'+nodeName+'>tr:eq(0)', original).children(':first'),
+			iBoxHack     = jqBoxHack.outerHeight() - jqBoxHack.height(),
+			anOriginal   = this._fnGetTrNodes( rootOriginal ),
+			anClone      = this._fnGetTrNodes( rootClone ),
+			heights      = [];
+
+		for ( i=0, iLen=anClone.length ; i<iLen ; i++ )
+		{
+			iHeightOriginal = anOriginal[i].offsetHeight;
+			iHeightClone = anClone[i].offsetHeight;
+			iHeight = iHeightClone > iHeightOriginal ? iHeightClone : iHeightOriginal;
+
+			if ( this.s.sHeightMatch == 'semiauto' )
+			{
+				anOriginal[i]._DTTC_iHeight = iHeight;
+			}
+
+			heights.push( iHeight );
+		}
+
+		for ( i=0, iLen=anClone.length ; i<iLen ; i++ )
+		{
+			anClone[i].style.height = heights[i]+"px";
+			anOriginal[i].style.height = heights[i]+"px";
+		}
+	}
+};
+
+
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Statics
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+/**
+ * FixedColumns default settings for initialisation
+ *  @name FixedColumns.defaults
+ *  @namespace
+ *  @static
+ */
+FixedColumns.defaults = /** @lends FixedColumns.defaults */{
+	/**
+	 * Number of left hand columns to fix in position
+	 *  @type     int
+	 *  @default  1
+	 *  @static
+	 *  @example
+	 *      var  = $('#example').dataTable( {
+	 *          "scrollX": "100%"
+	 *      } );
+	 *      new $.fn.dataTable.fixedColumns( table, {
+	 *          "leftColumns": 2
+	 *      } );
+	 */
+	"iLeftColumns": 1,
+
+	/**
+	 * Number of right hand columns to fix in position
+	 *  @type     int
+	 *  @default  0
+	 *  @static
+	 *  @example
+	 *      var table = $('#example').dataTable( {
+	 *          "scrollX": "100%"
+	 *      } );
+	 *      new $.fn.dataTable.fixedColumns( table, {
+	 *          "rightColumns": 1
+	 *      } );
+	 */
+	"iRightColumns": 0,
+
+	/**
+	 * Draw callback function which is called when FixedColumns has redrawn the fixed assets
+	 *  @type     function(object, object):void
+	 *  @default  null
+	 *  @static
+	 *  @example
+	 *      var table = $('#example').dataTable( {
+	 *          "scrollX": "100%"
+	 *      } );
+	 *      new $.fn.dataTable.fixedColumns( table, {
+	 *          "drawCallback": function () {
+	 *	            alert( "FixedColumns redraw" );
+	 *	        }
+	 *      } );
+	 */
+	"fnDrawCallback": null,
+
+	/**
+	 * Height matching algorthim to use. This can be "none" which will result in no height
+	 * matching being applied by FixedColumns (height matching could be forced by CSS in this
+	 * case), "semiauto" whereby the height calculation will be performed once, and the result
+	 * cached to be used again (fnRecalculateHeight can be used to force recalculation), or
+	 * "auto" when height matching is performed on every draw (slowest but must accurate)
+	 *  @type     string
+	 *  @default  semiauto
+	 *  @static
+	 *  @example
+	 *      var table = $('#example').dataTable( {
+	 *          "scrollX": "100%"
+	 *      } );
+	 *      new $.fn.dataTable.fixedColumns( table, {
+	 *          "heightMatch": "auto"
+	 *      } );
+	 */
+	"sHeightMatch": "semiauto"
+};
+
+
+
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Constants
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+/**
+ * FixedColumns version
+ *  @name      FixedColumns.version
+ *  @type      String
+ *  @default   See code
+ *  @static
+ */
+FixedColumns.version = "3.0.4";
+
+
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Fired events (for documentation)
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+
+/**
+ * Event fired whenever FixedColumns redraws the fixed columns (i.e. clones the table elements from the main DataTable). This will occur whenever the DataTable that the FixedColumns instance is attached does its own draw.
+ * @name FixedColumns#draw.dtfc
+ * @event
+ * @param {event} e jQuery event object
+ * @param {object} o Event parameters from FixedColumns
+ * @param {object} o.leftClone Instance's object dom.clone.left for easy reference. This object contains references to the left fixed clumn column's nodes
+ * @param {object} o.rightClone Instance's object dom.clone.right for easy reference. This object contains references to the right fixed clumn column's nodes
+ */
+
+
+// Make FixedColumns accessible from the DataTables instance
+$.fn.dataTable.FixedColumns = FixedColumns;
+$.fn.DataTable.FixedColumns = FixedColumns;
+
+
+return FixedColumns;
+}; // /factory
+
+
+// Define as an AMD module if possible
+if ( typeof define === 'function' && define.amd ) {
+	define( ['jquery', 'datatables'], factory );
+}
+else if ( typeof exports === 'object' ) {
+    // Node/CommonJS
+    factory( require('jquery'), require('datatables') );
+}
+else if ( jQuery && !jQuery.fn.dataTable.FixedColumns ) {
+	// Otherwise simply initialise as normal, stopping multiple evaluation
+	factory( jQuery, jQuery.fn.dataTable );
+}
+
+
+})(window, document);
+
+                            ˇúˇúˇúˇúˇúˇúˇúˇú 	 	ˇÚˇÚ d y ' d d     dˇ¢             » d    è  ˇúˇú d  » »   dê d   d,ˇµ               d  ,A 2 2      »> f f Ÿ » »   * * * * ≤ Ë ËNNNNNNNNNNNNNN§"~Ü¨‰Fnåƒ2b¢‹\∫rÙ b bæ	6	Ñ	∂	ﬁ
+(
+L
+î
+‚0ä X*^∞h¥(¶ÊTê™*v∂
+8|¿t–*‘<®Ã6`∞˛R¶.jñ∞‡˛(hîƒ⁄Ó6h∏ˆ^¥2î‚DlîºÊ.v¿b“ F æ!2!v!∏"@"ñ"∏##"#8#z#¬#‡$$0$^$ñ$‚%4%`%º&&~&Ê'P'º'¯(4(p(¨)†)Ã*&*J*Ñ+
++z,,h,∫,Ï--à-Ù.(.f.¢.ÿ//F/~/≤/¯0>0Ñ0“11`1Æ1Ë2$2^2ö2ﬁ3"3>3h3∂44`4®4“5,5û5Ë6>6|6‹77N7í7‘88B8Ü8»9
+9J9à9Ã::l:ö:ﬁ;†;‹<<P<¢<¯=2=Ï>:>å>‘?(?n?™?˙@H@Ä@∆AA~BB®BÓCCBCvC†C DD`DÆDˆEZE∂FFtF¥FˆG6GvG∂GˆHH2HNHjHÜHÃII8I^IÑI™JJ.JR    ß             @ .        ∆           	   j   	  ( |  	   §  	  L ≤  	  8 ˛  	  x6  	  6Æ  	  ‰  	 	 ˙  	  $  	  $4  	  $X  	 » |  	 … 0í  	Ÿ ¬www.glyphicons.com C o p y r i g h t   ©   2 0 1 4   b y   J a n   K o v a r i k .   A l l   r i g h t s   r e s e r v e d . G L Y P H I C O N S   H a l f l i n g s R e g u l a r 1 . 0 0 9 ; U K W N ; G L Y P H I C O N S H a l f l i n g s - R e g u l a r G L Y P H I C O N S   H a l f l i n g s   R e g u l a r V e r s i o n   1 . 0 0 9 ; P S   0 0 1 . 0 0 9 ; h o t c o n v   1 . 0 . 7 0 ; m a k e o t f . l i b 2 . 5 . 5 8 3 2 9 G L Y P H I C O N S H a l f l i n g s - R e g u l a r J a n   K o v a r i k J a n   K o v a r i k w w w . g l y p h i c o n s . c o m w w w . g l y p h i c o n s . c o m w w w . g l y p h i c o n s . c o m W e b f o n t   1 . 0 W e d   O c t   2 9   0 6 : 3 6 : 0 7   2 0 1 4 F o n t   S q u i r r e l         ˇµ 2                          ñ	
+ Ô !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ 	
+glyph1glyph2uni00A0uni2000uni2001uni2002uni2003uni2004uni2005uni2006uni2007uni2008uni2009uni200Auni202Funi205FEurouni20BDuni231Buni25FCuni2601uni26FAuni2709uni270FuniE001uniE002uniE003uniE005uniE006uniE007uniE008uniE009uniE010uniE011uniE012uniE013uniE014uniE015uniE016uniE017uniE018uniE019uniE020uniE021uniE022uniE023uniE024uniE025uniE026uniE027uniE028uniE029uniE030uniE031uniE032uniE033uniE034uniE035uniE036uniE037uniE038uniE039uniE040uniE041uniE042uniE043uniE044uniE045uniE046uniE047uniE048uniE049uniE050uniE051uniE052uniE053uniE054uniE055uniE056uniE057uniE058uniE059uniE060uniE062uniE063uniE064uniE065uniE066uniE067uniE068uniE069uniE070uniE071uniE072uniE073uniE074uniE075uniE076uniE077uniE078uniE079uniE080uniE081uniE082uniE083uniE084uniE085uniE086uniE087uniE088uniE089uniE090uniE091uniE092uniE093uniE094uniE095uniE096uniE097uniE101uniE102uniE103uniE104uniE105uniE106uniE107uniE108uniE109uniE110uniE111uniE112uniE113uniE114uniE115uniE116uniE117uniE118uniE119uniE120uniE121uniE122uniE123uniE124uniE125uniE126uniE127uniE128uniE129uniE130uniE131uniE132uniE133uniE134uniE135uniE136uniE137uniE138uniE139uniE140uniE141uniE142uniE143uniE144uniE145uniE146uniE148uniE149uniE150uniE151uniE152uniE153uniE154uniE155uniE156uniE157uniE158uniE159uniE160uniE161uniE162uniE163uniE164uniE165uniE166uniE167uniE168uniE169uniE170uniE171uniE172uniE173uniE174uniE175uniE176uniE177uniE178uniE179uniE180uniE181uniE182uniE183uniE184uniE185uniE186uniE187uniE188uniE189uniE190uniE191uniE192uniE193uniE194uniE195uniE197uniE198uniE199uniE200uniE201uniE202uniE203uniE204uniE205uniE206uniE209uniE210uniE211uniE212uniE213uniE214uniE215uniE216uniE218uniE219uniE221uniE223uniE224uniE225uniE226uniE227uniE230uniE231uniE232uniE233uniE234uniE235uniE236uniE237uniE238uniE239uniE240uniE241uniE242uniE243uniE244uniE245uniE246uniE247uniE248uniE249uniE250uniE251uniE252uniE253uniE254uniE255uniE256uniE257uniE258uniE259uniE260uniF8FFu1F511u1F6AA    TP√                                                                                                                                                                      -7 -18 -7t-18 7l-106 106q-7 8 -7 18t7 18l249 249l-94 94q-14 14 -10 24.5t25 10.5zM350 0h-300q-21 0 -35.5 14.5t-14.5 35.5v300q0 21 10.5 25t24.5 -10l94 -94l249 249 q8 7 18 7t18 -7l106 -106q7 -8 7 -18t-7 -18l-249 -249l94 -94q14 -14 10 -24.5t-25 -10.5z" />
+<glyph unicode="&#xe097;" d="M1014 1120l106 -106q7 -8 7 -18t-7 -18l-249 -249l94 -94q14 -14 10 -24.5t-25 -10.5h-300q-21 0 -35.5 14.5t-14.5 35.5v300q0 21 10.5 25t24.5 -10l94 -94l249 249q8 7 18 7t18 -7zM250 600h300q21 0 35.5 -14.5t14.5 -35.5v-300q0 -21 -10.5 -25t-24.5 10l-94 94 l-249 -249q-8 -7 -18 -7t-18 7l-106 106q-7 8 -7 18t7 18l249 249l-94 94q-14 14 -10 24.5t25 10.5z" />
+<glyph unicode="&#xe101;" d="M600 1177q117 0 224 -45.5t184.5 -123t123 -184.5t45.5 -224t-45.5 -224t-123 -184.5t-184.5 -123t-224 -45.5t-224 45.5t-184.5 123t-123 184.5t-45.5 224t45.5 224t123 184.5t184.5 123t224 45.5zM704 900h-208q-20 0 -32 -14.5t-8 -34.5l58 -302q4 -20 21.5 -34.5 t37.5 -14.5h54q20 0 37.5 14.5t21.5 34.5l58 302q4 20 -8 34.5t-32 14.5zM675 400h-150q-10 0 -17.5 -7.5t-7.5 -17.5v-150q0 -10 7.5 -17.5t17.5 -7.5h150q10 0 17.5 7.5t7.5 17.5v150q0 10 -7.5 17.5t-17.5 7.5z" />
+<glyph unicode="&#xe102;" d="M260 1200q9 0 19 -2t15 -4l5 -2q22 -10 44 -23l196 -118q21 -13 36 -24q29 -21 37 -12q11 13 49 35l196 118q22 13 45 23q17 7 38 7q23 0 47 -16.5t37 -33.5l13 -16q14 -21 18 -45l25 -123l8 -44q1 -9 8.5 -14.5t17.5 -5.5h61q10 0 17.5 -7.5t7.5 -17.5v-50 q0 -10 -7.5 -17.5t-17.5 -7.5h-50q-10 0 -17.5 -7.5t-7.5 -17.5v-175h-400v300h-200v-300h-400v175q0 10 -7.5 17.5t-17.5 7.5h-50q-10 0 -17.5 7.5t-7.5 17.5v50q0 10 7.5 17.5t17.5 7.5h61q11 0 18 3t7 8q0 4 9 52l25 128q5 25 19 45q2 3 5 7t13.5 15t21.5 19.5t26.5 15.5 t29.5 7zM915 1079l-166 -162q-7 -7 -5 -12t12 -5h219q10 0 15 7t2 17l-51 149q-3 10 -11 12t-15 -6zM463 917l-177 157q-8 7 -16 5t-11 -12l-51 -143q-3 -10 2 -17t15 -7h231q11 0 12.5 5t-5.5 12zM500 0h-375q-10 0 -17.5 7.5t-7.5 17.5v375h400v-400zM1100 400v-375 q0 -10 -7.5 -17.5t-17.5 -7.5h-375v400h400z" />
+<glyph unicode="&#xe103;" d="M1165 1190q8 3 21 -6.5t13 -17.5q-2 -178 -24.5 -323.5t-55.5 -245.5t-87 -174.5t-102.5 -118.5t-118 -68.5t-118.5 -33t-120 -4.5t-105 9.5t-90 16.5q-61 12 -78 11q-4 1 -12.5 0t-34 -14.5t-52.5 -40.5l-153 -153q-26 -24 -37 -14.5t-11 43.5q0 64 42 102q8 8 50.5 45 t66.5 58q19 17 35 47t13 61q-9 55 -10 102.5t7 111t37 130t78 129.5q39 51 80 88t89.5 63.5t94.5 45t113.5 36t129 31t157.5 37t182 47.5zM1116 1098q-8 9 -22.5 -3t-45.5 -50q-38 -47 -119 -103.5t-142 -89.5l-62 -33q-56 -30 -102 -57t-104 -68t-102.5 -80.5t-85.5 -91 t-64 -104.5q-24 -56 -31 -86t2 -32t31.5 17.5t55.5 59.5q25 30 94 75.5t125.5 77.5t147.5 81q70 37 118.5 69t102 79.5t99 111t86.5 148.5q22 50 24 60t-6 19z" />
+<glyph unicode="&#xe104;" d="M653 1231q-39 -67 -54.5 -131t-10.5 -114.5t24.5 -96.5t47.5 -80t63.5 -62.5t68.5 -46.5t65 -30q-4 7 -17.5 35t-18.5 39.5t-17 39.5t-17 43t-13 42t-9.5 44.5t-2 42t4 43t13.5 39t23 38.5q96 -42 165 -107.5t105 -138t52 -156t13 -159t-19 -149.5q-13 -55 -44 -106.5 t-68 -87t-78.5 -64.5t-72.5 -45t-53 -22q-72 -22 -127 -11q-31 6 -13 19q6 3 17 7q13 5 32.5 21t41 44t38.5 63.5t21.5 81.5t-6.5 94.5t-50 107t-104 115.5q10 -104 -0.5 -189t-37 -140.5t-65 -93t-84 -52t-93.5 -11t-95 24.5q-80 36 -131.5 114t-53.5 171q-2 23 0 49.5 t4.5 52.5t13.5 56t27.5 60t46 64.5t69.5 68.5q-8 -53 -5 -102.5t17.5 -90t34 -68.5t44.5 -39t49 -2q31 13 38.5 36t-4.5 55t-29 64.5t-36 75t-26 75.5q-15 85 2 161.5t53.5 128.5t85.5 92.5t93.5 61t81.5 25.5z" />
+<glyph unicode="&#xe105;" d="M600 1094q82 0 160.5 -22.5t140 -59t116.5 -82.5t94.5 -95t68 -95t42.5 -82.5t14 -57.5t-14 -57.5t-43 -82.5t-68.5 -95t-94.5 -95t-116.5 -82.5t-140 -59t-159.5 -22.5t-159.5 22.5t-140 59t-116.5 82.5t-94.5 95t-68.5 95t-43 82.5t-14 57.5t14 57.5t42.5 82.5t68 95 t94.5 95t116.5 82.5t140 59t160.5 22.5zM888 829q-15 15 -18 12t5 -22q25 -57 25 -119q0 -124 -88 -212t-212 -88t-212 88t-88 212q0 59 23 114q8 19 4.5 22t-17.5 -12q-70 -69 -160 -184q-13 -16 -15 -40.5t9 -42.5q22 -36 47 -71t70 -82t92.5 -81t113 -58.5t133.5 -24.5 t133.5 24t113 58.5t92.5 81.5t70 81.5t47 70.5q11 18 9 42.5t-14 41.5q-90 117 -163 189zM448 727l-35 -36q-15 -15 -19.5 -38.5t4.5 -41.5q37 -68 93 -116q16 -13 38.5 -11t36.5 17l35 34q14 15 12.5 33.5t-16.5 33.5q-44 44 -89 117q-11 18 -28 20t-32 -12z" />
+<glyph unicode="&#xe106;" d="M592 0h-148l31 120q-91 20 -175.5 68.5t-143.5 106.5t-103.5 119t-66.5 110t-22 76q0 21 14 57.5t42.5 82.5t68 95t94.5 95t116.5 82.5t140 59t160.5 22.5q61 0 126 -15l32 121h148zM944 770l47 181q108 -85 176.5 -192t68.5 -159q0 -26 -19.5 -71t-59.5 -102t-93 -112 t-129 -104.5t-158 -75.5l46 173q77 49 136 117t97 131q11 18 9 42.5t-14 41.5q-54 70 -107 130zM310 824q-70 -69 -160 -184q-13 -16 -15 -40.5t9 -42.5q18 -30 39 -60t57 -70.5t74 -73t90 -61t105 -41.5l41 154q-107 18 -178.5 101.5t-71.5 193.5q0 59 23 114q8 19 4.5 22 t-17.5 -12zM448 727l-35 -36q-15 -15 -19.5 -38.5t4.5 -41.5q37 -68 93 -116q16 -13 38.5 -11t36.5 17l12 11l22 86l-3 4q-44 44 -89 117q-11 18 -28 20t-32 -12z" />
+<glyph unicode="&#xe107;" d="M-90 100l642 1066q20 31 48 28.5t48 -35.5l642 -1056q21 -32 7.5 -67.5t-50.5 -35.5h-1294q-37 0 -50.5 34t7.5 66zM155 200h345v75q0 10 7.5 17.5t17.5 7.5h150q10 0 17.5 -7.5t7.5 -17.5v-75h345l-445 723zM496 700h208q20 0 32 -14.5t8 -34.5l-58 -252 q-4 -20 -21.5 -34.5t-37.5 -14.5h-54q-20 0 -37.5 14.5t-21.5 34.5l-58 252q-4 20 8 34.5t32 14.5z" />
+<glyph unicode="&#xe108;" d="M650 1200q62 0 106 -44t44 -106v-339l363 -325q15 -14 26 -38.5t11 -44.5v-41q0 -20 -12 -26.5t-29 5.5l-359 249v-263q100 -93 100 -113v-64q0 -21 -13 -29t-32 1l-205 128l-205 -128q-19 -9 -32 -1t-13 29v64q0 20 100 113v263l-359 -249q-17 -12 -29 -5.5t-12 26.5v41 q0 20 11 44.5t26 38.5l363 325v339q0 62 44 106t106 44z" />
+<glyph unicode="&#xe109;" d="M850 1200h100q21 0 35.5 -14.5t14.5 -35.5v-50h50q21 0 35.5 -14.5t14.5 -35.5v-150h-1100v150q0 21 14.5 35.5t35.5 14.5h50v50q0 21 14.5 35.5t35.5 14.5h100q21 0 35.5 -14.5t14.5 -35.5v-50h500v50q0 21 14.5 35.5t35.5 14.5zM1100 800v-750q0 -21 -14.5 -35.5 t-35.5 -14.5h-1000q-21 0 -35.5 14.5t-14.5 35.5v750h1100zM100 600v-100h100v100h-100zM300 600v-100h100v100h-100zM500 600v-100h100v100h-100zM700 600v-100h100v100h-100zM900 600v-100h100v100h-100zM100 400v-100h100v100h-100zM300 400v-100h100v100h-100zM500 400 v-100h100v100h-100zM700 400v-100h100v100h-100zM900 400v-100h100v100h-100zM100 200v-100h100v100h-100zM300 200v-100h100v100h-100zM500 200v-100h100v100h-100zM700 200v-100h100v100h-100zM900 200v-100h100v100h-100z" />
+<glyph unicode="&#xe110;" d="M1135 1165l249 -230q15 -14 15 -35t-15 -35l-249 -230q-14 -14 -24.5 -10t-10.5 25v150h-159l-600 -600h-291q-21 0 -35.5 14.5t-14.5 35.5v100q0 21 14.5 35.5t35.5 14.5h209l600 600h241v150q0 21 10.5 25t24.5 -10zM522 819l-141 -141l-122 122h-209q-21 0 -35.5 14.5 t-14.5 35.5v100q0 21 14.5 35.5t35.5 14.5h291zM1135 565l249 -230q15 -14 15 -35t-15 -35l-249 -230q-14 -14 -24.5 -10t-10.5 25v150h-241l-181 181l141 141l122 -122h159v150q0 21 10.5 25t24.5 -10z" />
+<glyph unicode="&#xe111;" d="M100 1100h1000q41 0 70.5 -29.5t29.5 -70.5v-600q0 -41 -29.5 -70.5t-70.5 -29.5h-596l-304 -300v300h-100q-41 0 -70.5 29.5t-29.5 70.5v600q0 41 29.5 70.5t70.5 29.5z" />
+<glyph unicode="&#xe112;" d="M150 1200h200q21 0 35.5 -14.5t14.5 -35.5v-250h-300v250q0 21 14.5 35.5t35.5 14.5zM850 1200h200q21 0 35.5 -14.5t14.5 -35.5v-250h-300v250q0 21 14.5 35.5t35.5 14.5zM1100 800v-300q0 -41 -3 -77.5t-15 -89.5t-32 -96t-58 -89t-89 -77t-129 -51t-174 -20t-174 20 t-129 51t-89 77t-58 89t-32 96t-15 89.5t-3 77.5v300h300v-250v-27v-42.5t1.5 -41t5 -38t10 -35t16.5 -30t25.5 -24.5t35 -19t46.5 -12t60 -4t60 4.5t46.5 12.5t35 19.5t25 25.5t17 30.5t10 35t5 38t2 40.5t-0.5 42v25v250h300z" />
+<glyph unicode="&#xe113;" d="M1100 411l-198 -199l-353 353l-353 -353l-197 199l551 551z" />
+<glyph unicode="&#xe114;" d="M1101 789l-550 -551l-551 551l198 199l353 -353l353 353z" />
+<glyph unicode="&#xe115;" d="M404 1000h746q21 0 35.5 -14.5t14.5 -35.5v-551h150q21 0 25 -10.5t-10 -24.5l-230 -249q-14 -15 -35 -15t-35 15l-230 249q-14 14 -10 24.5t25 10.5h150v401h-381zM135 984l230 -249q14 -14 10 -24.5t-25 -10.5h-150v-400h385l215 -200h-750q-21 0 -35.5 14.5 t-14.5 35.5v550h-150q-21 0 -25 10.5t10 24.5l230 249q14 15 35 15t35 -15z" />
+<glyph unicode="&#xe116;" d="M56 1200h94q17 0 31 -11t18 -27l38 -162h896q24 0 39 -18.5t10 -42.5l-100 -475q-5 -21 -27 -42.5t-55 -21.5h-633l48 -200h535q21 0 35.5 -14.5t14.5 -35.5t-14.5 -35.5t-35.5 -14.5h-50v-50q0 -21 -14.5 -35.5t-35.5 -14.5t-35.5 14.5t-14.5 35.5v50h-300v-50 q0 -21 -14.5 -35.5t-35.5 -14.5t-35.5 14.5t-14.5 35.5v50h-31q-18 0 -32.5 10t-20.5 19l-5 10l-201 961h-54q-20 0 -35 14.5t-15 35.5t15 35.5t35 14.5z" />
+<glyph unicode="&#xe117;" d="M1200 1000v-100h-1200v100h200q0 41 29.5 70.5t70.5 29.5h300q41 0 70.5 -29.5t29.5 -70.5h500zM0 800h1200v-800h-1200v800z" />
+<glyph unicode="&#xe118;" d="M200 800l-200 -400v600h200q0 41 29.5 70.5t70.5 29.5h300q42 0 71 -29.5t29 -70.5h500v-200h-1000zM1500 700l-300 -700h-1200l300 700h1200z" />
+<glyph unicode="&#xe119;" d="M635 1184l230 -249q14 -14 10 -24.5t-25 -10.5h-150v-601h150q21 0 25 -10.5t-10 -24.5l-230 -249q-14 -15 -35 -15t-35 15l-230 249q-14 14 -10 24.5t25 10.5h150v601h-150q-21 0 -25 10.5t10 24.5l230 249q14 15 35 15t35 -15z" />
+<glyph unicode="&#xe120;" d="M936 864l249 -229q14 -15 14 -35.5t-14 -35.5l-249 -229q-15 -15 -25.5 -10.5t-10.5 24.5v151h-600v-151q0 -20 -10.5 -24.5t-25.5 10.5l-249 229q-14 15 -14 35.5t14 35.5l249 229q15 15 25.5 10.5t10.5 -25.5v-149h600v149q0 21 10.5 25.5t25.5 -10.5z" />
+<glyph unicode="&#

@@ -1,0 +1,90 @@
+body {
+	margin: 0;
+    padding: 0;
+	font-family: 'Trebuchet MS';
+    background-color:gray;
+}
+
+h2, h3 {
+	margin:0;
+}
+
+.footer-style {
+    font-weight: bold;
+    color: green;
+    text-shadow: 2px 2px #ccc;
+}
+
+h2.title {
+	color: blue;
+	text-shadow: 2px 2px #ccc;
+    font-weight: bolder;
+}
+h3.title  {
+	color: green;
+	text-shadow: 2px 2px #ccc;
+    font-weight: bolder;
+}
+
+.navbar-custom {
+	background: linear-gradient(#4cae4c,green);
+	border-radius: 2px;
+	box-shadow: 2px 2px 4px 3px #666;
+}
+
+.navbar-custom a{
+	color: #fff;
+}
+
+.navbar-custom a:hover {
+	background: green !important;
+}
+
+
+#sidemenu {
+    margin:0;
+    padding:0;
+    width:100%;
+    border-top:#ccc 1px solid;
+    height:100%;
+}
+#sidemenu a {
+    color:#666;
+    text-decoration:none;
+}
+#error {
+    background: #FFCC99;
+    border:red 2px solid;
+    font-weight:bold;
+    width:98%;
+    color:red;
+    padding:5px;
+    transition:0.5s;
+}
+
+#sidemenu li {
+    padding:10px;
+    transition:0.2s;
+    padding-bottom:23px;
+    padding-left:12px;
+    background: url(images/next.png) no-repeat #F4F4F4 95% 40% ;
+    text-transform:uppercase;
+    margin:0;
+    list-style:none;
+    font-size:100%;
+    border-bottom:#ccc 1px solid;
+    height:0.7em;
+    width: 92%;
+}
+#sidemenu li.selected {
+    background: #fff;
+
+}
+#sidemenu li:hover {
+    transition:0.2s;
+    cursor:pointer;
+    background: #FFF
+}
+.on {
+    background: darkgreen;
+}
